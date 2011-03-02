@@ -1,0 +1,9 @@
+syntax: glob
+*.o
+*.patch
+*.diff
+*.m
+*.orig
+*.c~
+*.h~
+guart
