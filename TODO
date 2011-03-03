@@ -2,4 +2,4 @@
 -save settings
 -make textview font configurable
 -add support for modem lines control
-
+-check for gtkhex presence

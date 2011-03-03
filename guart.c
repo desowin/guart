@@ -19,6 +19,7 @@
 #include <gio/gio.h>
 #include <string.h>
 #include <unistd.h>
+#include <hex-document.h>
 #include "guart.h"
 #include "conf.h"
 #include "serial.h"
@@ -28,6 +29,9 @@ static GtkWidget *lbl_cfg;
 static GtkWidget *btn_cfg;
 static GtkWidget *btn_connect;
 static GtkTextBuffer *databuffer;
+#ifdef HAVE_LIBGTKHEX
+static HexDocument *hexdocument;
+#endif
 
 static GIOChannel *serial_channel = NULL;
 static guint serial_channel_source;
@@ -66,6 +70,10 @@ gboolean serial_read_cb(GIOChannel *source, GIOCondition condition, gpointer dat
         gtk_text_buffer_get_end_iter(databuffer, &iter);
         gtk_text_buffer_insert(databuffer, &iter, c, bytes_read);
 
+#ifdef HAVE_LIBGTKHEX
+        hex_document_set_data(hexdocument, hexdocument->file_size,
+                              bytes_read, 0 /* rep_len? */, (guchar*)c, FALSE);
+#endif
     }
     
     return TRUE;
@@ -158,6 +166,10 @@ int main(int argc, char *argv[]) {
     GtkWidget *hbox_conf;
     GtkWidget *scrolled_window;
     GtkWidget *view;
+#ifdef HAVE_LIBGTKHEX
+    GtkWidget *hexview;
+    GtkWidget *notebook;
+#endif
     GtkWidget *hbox_input;
     GtkWidget *entry;
     GtkWidget *btn_send;
@@ -208,6 +220,12 @@ int main(int argc, char *argv[]) {
     gtk_widget_modify_font(GTK_WIDGET(view), font_desc);
     gtk_container_add(GTK_CONTAINER(scrolled_window), view);
     
+#ifdef HAVE_LIBGTKHEX
+    notebook = gtk_notebook_new();
+    hexdocument = hex_document_new();
+    hexview = hex_document_add_view(hexdocument);
+#endif
+    
     hbox_input = gtk_hbox_new(FALSE, 0);
     entry = gtk_entry_new();
     btn_send = gtk_button_new_with_label("Send");
@@ -219,7 +237,15 @@ int main(int argc, char *argv[]) {
                        GTK_SIGNAL_FUNC(send_button_cb), window);
     
     gtk_box_pack_start(GTK_BOX(vbox), hbox_conf, FALSE, FALSE, 0);
+#ifdef HAVE_LIBGTKHEX
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrolled_window,
+                             gtk_label_new("Text View"));
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), hexview,
+                             gtk_label_new("Hex View"));
+    gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
+#else
     gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
+#endif
     gtk_box_pack_start(GTK_BOX(vbox), hbox_input, FALSE, FALSE, 0);
     
     gtk_container_add(GTK_CONTAINER(window), vbox);

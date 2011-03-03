@@ -17,5 +17,6 @@
 #ifndef GUART_H
 #define GUART_H
 
+#define HAVE_LIBGTKHEX
 
 #endif /* GUART_H */
