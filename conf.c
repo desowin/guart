@@ -179,6 +179,7 @@ static void set_terminator_combo_box(GtkWidget *cbox_terminator, Configuration *
             else
             {
                 /* custom terminator */
+                gtk_combo_box_set_active(GTK_COMBO_BOX(cbox_terminator), 4);
             }
             break;
         case 2:
@@ -190,10 +191,12 @@ static void set_terminator_combo_box(GtkWidget *cbox_terminator, Configuration *
             else
             {
                 /* custom terminator */
+                gtk_combo_box_set_active(GTK_COMBO_BOX(cbox_terminator), 4);
             }
             break;
         default:
             /* custom terminator */
+            gtk_combo_box_set_active(GTK_COMBO_BOX(cbox_terminator), 4);
             break;
     }
 }
@@ -208,6 +211,10 @@ static GtkWidget *create_configuration_table(Configuration *cfg)
 
     cbox_port = gtk_combo_box_entry_new_text();
     fill_combo_box(cbox_port, port_labels, G_N_ELEMENTS(port_labels));
+    gtk_entry_set_text(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(cbox_port))),
+                       cfg->port);
+    g_object_set_data(G_OBJECT(cfg_table), "port", cbox_port);
+    
     cbox_baudrate = gtk_combo_box_new_text();
     fill_combo_box(cbox_baudrate, baud_labels, G_N_ELEMENTS(baud_labels));
 
@@ -298,6 +305,7 @@ gboolean configure(GtkWidget *parent, Configuration *cfg)
 {
     GtkWidget *dialog;
     GtkWidget *cfg_table;
+    GtkWidget *cbox_port;
     Configuration *cfg_new;
 
     cfg_new = configuration_new();
@@ -315,7 +323,13 @@ gboolean configure(GtkWidget *parent, Configuration *cfg)
     gtk_box_pack_start_defaults(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))),
                                 cfg_table);
 
-    gint result = gtk_dialog_run (GTK_DIALOG (dialog));
+    gint result = gtk_dialog_run(GTK_DIALOG(dialog));
+
+    cbox_port = GTK_WIDGET(g_object_get_data(G_OBJECT(cfg_table), "port"));
+    if (cfg_new->port != NULL)
+        g_free(cfg_new->port);
+    cfg_new->port = gtk_combo_box_get_active_text(GTK_COMBO_BOX(cbox_port));
+
     gtk_widget_destroy(dialog);
     
     switch (result)
