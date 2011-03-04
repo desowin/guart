@@ -111,10 +111,10 @@ static void add_to_box(GtkWidget *box, gchar *label, GtkWidget *widget)
     GtkWidget *hbox = gtk_hbox_new(FALSE, 0);
     GtkWidget *lbl = gtk_label_new(label);
     
-    gtk_box_pack_start_defaults(GTK_BOX(hbox), lbl);
-    gtk_box_pack_start_defaults(GTK_BOX(hbox), widget);
+    gtk_box_pack_start(GTK_BOX(hbox), lbl, TRUE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), widget, TRUE, TRUE, 0);
 
-    gtk_box_pack_start_defaults(GTK_BOX(box), hbox);
+    gtk_box_pack_start(GTK_BOX(box), hbox, FALSE, FALSE, 0);
 }
 
 void combo_box_changed_cb(GtkComboBox *widget, gint *data)
@@ -159,6 +159,45 @@ void terminator_changed_cb(GtkComboBox *widget, Configuration *cfg)
     }
 }
 
+static void set_terminator_combo_box(GtkWidget *cbox_terminator, Configuration *cfg)
+{
+    switch (cfg->n_terminator_chars)
+    {
+        case 0:
+            /* None */
+            gtk_combo_box_set_active(GTK_COMBO_BOX(cbox_terminator), 0);
+            break;
+        case 1:
+            if (cfg->terminator[0] == 0x0A) /* LF */
+            {
+                gtk_combo_box_set_active(GTK_COMBO_BOX(cbox_terminator), 1);
+            }
+            else if (cfg->terminator[0] == 0x0D) /* CR */
+            {
+                gtk_combo_box_set_active(GTK_COMBO_BOX(cbox_terminator), 2);
+            }
+            else
+            {
+                /* custom terminator */
+            }
+            break;
+        case 2:
+            if (cfg->terminator[0] == 0x0D && cfg->terminator[1] == 0x0A)
+            {
+                /* CR LF */
+                gtk_combo_box_set_active(GTK_COMBO_BOX(cbox_terminator), 3);
+            }
+            else
+            {
+                /* custom terminator */
+            }
+            break;
+        default:
+            /* custom terminator */
+            break;
+    }
+}
+
 static GtkWidget *create_configuration_table(Configuration *cfg)
 {
     GtkWidget *cfg_table;
@@ -185,6 +224,7 @@ static GtkWidget *create_configuration_table(Configuration *cfg)
 
     cbox_terminator = gtk_combo_box_new_text();
     fill_combo_box(cbox_terminator, terminator_labels, G_N_ELEMENTS(terminator_labels));
+    set_terminator_combo_box(cbox_terminator, cfg);
 
     cbox_flow = gtk_combo_box_new_text();
     fill_combo_box(cbox_flow, flow_labels, G_N_ELEMENTS(flow_labels));
