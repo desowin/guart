@@ -33,6 +33,8 @@ static GtkTextBuffer *databuffer;
 static HexDocument *hexdocument;
 #endif
 
+static GtkWidget *txt_dtr, *txt_dsr, *txt_rts, *txt_cts;
+
 static GIOChannel *serial_channel = NULL;
 static guint serial_channel_source;
 static int serial_fd;
@@ -84,6 +86,42 @@ static void serial_detach_notify(gpointer data)
 
 }
 
+static inline void check_line_change(gchar current, gchar previous, GtkWidget *w)
+{
+    if (current != previous)
+    {
+        previous = current;
+        gtk_label_set_text(GTK_LABEL(w), current ? "High" : "Low");
+    }
+}
+
+/**
+ *  Checks DTR, DSR, RTS and CTS lines for change.
+ *  Updates appropriate labels (prev_dtr, prev_dsr, prev_rts, prev_cts) if needed.
+ *  create_control_line_widgets() *must* be called prior to this function.
+ *  Supposed to be called as idle source.
+ *
+ *  \return FALSE if not connected to any
+ **/
+static gboolean update_control_lines_cb(gpointer data)
+{
+    static gchar prev_dtr = -1, prev_dsr = -1, prev_rts = -1, prev_cts = -1;
+    gchar dtr, dsr, rts, cts;
+
+    if (serial_channel == NULL)
+        return FALSE;
+
+    if (get_control_lines(serial_fd, &dtr, &dsr, &rts, &cts) == FALSE)
+        return FALSE;
+
+    check_line_change(dtr, prev_dtr, txt_dtr);
+    check_line_change(dsr, prev_dsr, txt_dsr);
+    check_line_change(rts, prev_rts, txt_rts);
+    check_line_change(cts, prev_cts, txt_cts);
+
+    return TRUE;
+}
+
 static void connect_button_cb(GtkButton *btn, gpointer data)
 {
     Configuration *cfg = g_object_get_data(G_OBJECT(data), "cfg");
@@ -108,6 +146,8 @@ static void connect_button_cb(GtkButton *btn, gpointer data)
                                 serial_read_cb, NULL, serial_detach_notify);
         g_io_channel_unref(serial_channel);
 
+        g_idle_add(update_control_lines_cb, NULL);
+        
         gtk_widget_set_sensitive(btn_cfg, FALSE);
         gtk_button_set_label(btn, "Disconnect");
     }
@@ -161,6 +201,121 @@ static void send_button_cb(GtkButton *btn, GtkWidget *window)
     }
 }
 
+static gboolean
+show_menu_cb(GtkWidget *widget, GdkEvent *event)
+{
+    GtkMenu *menu;
+
+    g_return_val_if_fail(widget != NULL, FALSE);
+    g_return_val_if_fail(GTK_IS_MENU(widget), FALSE);
+    g_return_val_if_fail(event != NULL, FALSE);
+
+    if (serial_channel == NULL)
+    {
+        /* there's no point in showing menu if we're not connected to any tty */
+        return FALSE;
+    }
+    
+    menu = GTK_MENU (widget);
+    if (event->type == GDK_BUTTON_PRESS)
+    {
+        GdkEventButton *event_button = (GdkEventButton *) event;
+        if (event_button->button == 3)
+        {
+            gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
+			               event_button->button, event_button->time);
+	        return TRUE;
+	    }
+    }
+    return FALSE;
+}
+
+static void status_line_menu_item_cb(GtkMenuItem *item, gpointer data)
+{
+    gint state = GPOINTER_TO_INT(data);
+    void (*callback)(int fd, gchar state) = g_object_get_data(G_OBJECT(item), "callback");
+
+    if (serial_channel == NULL)
+    {
+        /* not connected to any tty */
+        return;
+    }
+    if (callback != NULL)
+    {
+        callback(serial_fd, (gchar)state);
+    }
+}
+
+static void create_control_line_widget(GtkWidget *box, gchar *lbl,
+                                       GtkWidget **widget, gchar *menu_lbl,
+                                       void (*callback)(int fd, gchar state))
+{
+    GtkWidget *label;
+    
+    if (callback != NULL)
+    {
+        /* pack label inside GtkEventBox, so we can get button press event */
+        label = gtk_event_box_new();
+        GtkWidget *text = gtk_label_new(lbl);
+        gtk_container_add(GTK_CONTAINER(label), text);
+    }
+    else
+    {
+        label = gtk_label_new(lbl);
+    }
+    *widget = gtk_label_new(NULL);
+
+    gtk_box_pack_start(GTK_BOX(box), label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(box), *widget, FALSE, FALSE, 0);
+
+    if (callback != NULL && menu_lbl != NULL)
+    {
+        /* prepare right click menu */
+        GtkWidget *menu = gtk_menu_new();
+        gchar *high = g_strdup_printf("Set %s high", menu_lbl);
+        gchar *low = g_strdup_printf("Set %s low", menu_lbl);
+
+        GtkWidget *i_high = gtk_menu_item_new_with_label(high);
+        GtkWidget *i_low = gtk_menu_item_new_with_label(low);
+
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), i_high);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), i_low);
+
+        g_object_set_data(G_OBJECT(i_high), "callback", callback);
+        g_signal_connect(i_high, "activate",
+                         G_CALLBACK(status_line_menu_item_cb),
+                         GINT_TO_POINTER(1));
+
+        g_object_set_data(G_OBJECT(i_low), "callback", callback);
+        g_signal_connect(i_low, "activate",
+                         G_CALLBACK(status_line_menu_item_cb),
+                         GINT_TO_POINTER(0));
+
+        g_signal_connect_swapped(label, "button-press-event",
+	                             G_CALLBACK(show_menu_cb), menu);
+        
+        g_free(high);
+        g_free(low);
+
+        /*
+           show menu widgets now, so later just gtk_menu_popup() will suffice
+        */
+        gtk_widget_show_all(menu);
+    }
+}
+
+static GtkWidget *create_control_line_widgets()
+{
+    GtkWidget *hbox = gtk_hbox_new(TRUE, 0);
+
+    create_control_line_widget(hbox, "DTR:", &txt_dtr, "DTR", set_dtr);
+    create_control_line_widget(hbox, "DSR:", &txt_dsr, NULL, NULL);
+    create_control_line_widget(hbox, "RTS:", &txt_rts, "RTS", set_rts);
+    create_control_line_widget(hbox, "CTS:", &txt_cts, NULL, NULL);
+
+    return hbox;
+}
+
 int main(int argc, char *argv[]) {
     GtkWidget *vbox;
     GtkWidget *hbox_conf;
@@ -173,6 +328,7 @@ int main(int argc, char *argv[]) {
     GtkWidget *hbox_input;
     GtkWidget *entry;
     GtkWidget *btn_send;
+    GtkWidget *control_lines;
     gchar *cfg_text;
     
     Configuration *cfg = configuration_new();
@@ -235,7 +391,9 @@ int main(int argc, char *argv[]) {
     g_object_set_data(G_OBJECT(window), "entry", entry);
     gtk_signal_connect(GTK_OBJECT(btn_send), "clicked",
                        GTK_SIGNAL_FUNC(send_button_cb), window);
-    
+
+    control_lines = create_control_line_widgets();
+
     gtk_box_pack_start(GTK_BOX(vbox), hbox_conf, FALSE, FALSE, 0);
 #ifdef HAVE_LIBGTKHEX
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), scrolled_window,
@@ -247,6 +405,7 @@ int main(int argc, char *argv[]) {
     gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
 #endif
     gtk_box_pack_start(GTK_BOX(vbox), hbox_input, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), control_lines, FALSE, FALSE, 0);
     
     gtk_container_add(GTK_CONTAINER(window), vbox);
     

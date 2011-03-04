@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include "serial.h"
 #include "conf.h"
 
@@ -151,4 +152,59 @@ GIOChannel *serial_connect(Configuration *cfg, int *serial_fd)
 
     *serial_fd = fd;
 	return io;
+}
+
+gboolean get_control_lines(int fd, gchar *dtr, gchar *dsr, gchar *rts, gchar *cts)
+{
+    int status;
+
+    if (ioctl(fd, TIOCMGET, &status) == -1) {
+        g_message("TIOCMGET failed");
+        return FALSE;
+    }
+
+    if (status & TIOCM_DTR) *dtr = 1; else *dtr = 0;
+    if (status & TIOCM_DSR) *dsr = 1; else *dsr = 0;
+    if (status & TIOCM_RTS) *rts = 1; else *rts = 0;
+    if (status & TIOCM_CTS) *cts = 1; else *cts = 0;
+
+    return TRUE;
+}
+
+void set_rts(int fd, gchar state)
+{
+    int status;
+
+    if (ioctl(fd, TIOCMGET, &status) == -1) {
+        g_message("setRTS(): TIOCMGET failed");
+        return;
+    }
+
+    if (state)
+        status |= TIOCM_RTS;
+    else
+        status &= ~TIOCM_RTS;
+
+    if (ioctl(fd, TIOCMSET, &status) == -1) {
+        g_message("setRTS(): TIOCMSET failed");
+    }
+}
+
+void set_dtr(int fd, gchar state)
+{
+    int status;
+
+    if (ioctl(fd, TIOCMGET, &status) == -1) {
+        g_message("setRTS(): TIOCMGET failed");
+        return;
+    }
+
+    if (state)
+        status |= TIOCM_DTR;
+    else
+        status &= ~TIOCM_DTR;
+
+    if (ioctl(fd, TIOCMSET, &status) == -1) {
+        g_message("setRTS(): TIOCMSET failed");
+    }
 }

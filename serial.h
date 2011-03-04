@@ -21,5 +21,8 @@
 #include "conf.h"
 
 GIOChannel *serial_connect(Configuration *cfg, int *serial_fd);
+gboolean get_control_lines(int fd, gchar *dtr, gchar *dsr, gchar *rts, gchar *cts);
+void set_rts(int fd, gchar state);
+void set_dtr(int fd, gchar state);
 
 #endif /* SERIAL_H */
