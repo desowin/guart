@@ -77,7 +77,7 @@ gboolean serial_read_cb(GIOChannel *source, GIOCondition condition, gpointer dat
                               bytes_read, 0 /* rep_len? */, (guchar*)c, FALSE);
 #endif
     }
-    
+
     return TRUE;
 }
 
@@ -146,8 +146,8 @@ static void connect_button_cb(GtkButton *btn, gpointer data)
                                 serial_read_cb, NULL, serial_detach_notify);
         g_io_channel_unref(serial_channel);
 
-        g_idle_add(update_control_lines_cb, NULL);
-        
+        g_idle_add_full(G_PRIORITY_LOW, update_control_lines_cb, NULL, NULL);
+
         gtk_widget_set_sensitive(btn_cfg, FALSE);
         gtk_button_set_label(btn, "Disconnect");
     }
@@ -174,7 +174,7 @@ static void send_button_cb(GtkButton *btn, GtkWidget *window)
         const gchar *entry_text = gtk_entry_get_text(GTK_ENTRY(entry));
         gint entry_text_length = strlen(entry_text);
         gint i;
-        
+
         if (entry_text_length == 0)
         {
             return;
@@ -251,7 +251,7 @@ static void create_control_line_widget(GtkWidget *box, gchar *lbl,
                                        void (*callback)(int fd, gchar state))
 {
     GtkWidget *label;
-    
+
     if (callback != NULL)
     {
         /* pack label inside GtkEventBox, so we can get button press event */
@@ -293,7 +293,7 @@ static void create_control_line_widget(GtkWidget *box, gchar *lbl,
 
         g_signal_connect_swapped(label, "button-press-event",
 	                             G_CALLBACK(show_menu_cb), menu);
-        
+
         g_free(high);
         g_free(low);
 
@@ -330,7 +330,7 @@ int main(int argc, char *argv[]) {
     GtkWidget *btn_send;
     GtkWidget *control_lines;
     gchar *cfg_text;
-    
+
     Configuration *cfg = configuration_new();
     /* TODO: save last used settings */
     cfg->port = g_strdup("/dev/ttyUSB0");
@@ -345,15 +345,15 @@ int main(int argc, char *argv[]) {
                        GTK_SIGNAL_FUNC (destroy), NULL);
 
     g_object_set_data_full(G_OBJECT(window), "cfg", cfg, (GDestroyNotify)configuration_free);
-    
+
     vbox = gtk_vbox_new(FALSE, 5);
 
     hbox_conf = gtk_hbox_new(FALSE, 5);
-    
+
     cfg_text = get_configuration_string(cfg);
     lbl_cfg = gtk_label_new(cfg_text);
     g_free(cfg_text);
-    
+
     btn_cfg = gtk_button_new_with_label("Configure");
     btn_connect = gtk_button_new_with_label("Connect");
 
@@ -365,23 +365,24 @@ int main(int argc, char *argv[]) {
     gtk_box_pack_start(GTK_BOX(hbox_conf), lbl_cfg, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox_conf), btn_cfg, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox_conf), btn_connect, FALSE, FALSE, 0);
-    
+
     scrolled_window = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window),
                                    GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     databuffer = gtk_text_buffer_new(NULL);
     view = gtk_text_view_new_with_buffer(databuffer);
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
     /* TODO: make this configurable */
     PangoFontDescription *font_desc = pango_font_description_from_string("Monospace 10");
     gtk_widget_modify_font(GTK_WIDGET(view), font_desc);
     gtk_container_add(GTK_CONTAINER(scrolled_window), view);
-    
+
 #ifdef HAVE_LIBGTKHEX
     notebook = gtk_notebook_new();
     hexdocument = hex_document_new();
     hexview = hex_document_add_view(hexdocument);
 #endif
-    
+
     hbox_input = gtk_hbox_new(FALSE, 0);
     entry = gtk_entry_new();
     btn_send = gtk_button_new_with_label("Send");
@@ -406,12 +407,12 @@ int main(int argc, char *argv[]) {
 #endif
     gtk_box_pack_start(GTK_BOX(vbox), hbox_input, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), control_lines, FALSE, FALSE, 0);
-    
+
     gtk_container_add(GTK_CONTAINER(window), vbox);
-    
+
     gtk_widget_show_all(window);
 
     gtk_main();
-    
+
     return 0;
 }

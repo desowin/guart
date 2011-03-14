@@ -16,7 +16,11 @@
 
 #include <gio/gio.h>
 #include <fcntl.h>
+
+/* required for CRTSCTS */
+#define __USE_MISC
 #include <termios.h>
+
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
@@ -24,8 +28,8 @@
 #include "serial.h"
 #include "conf.h"
 
-//typedef unsigned int	tcflag_t; /*FIXME*/
-
+/* FIXME: do runtime check if currently running kernel supports CDTRDSR */
+#define CDTRDSR 004000000000 /* DTR/DSR flow control */
 
 static tcflag_t get_cflag(Configuration *cfg)
 {
