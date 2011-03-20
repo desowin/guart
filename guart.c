@@ -215,7 +215,7 @@ show_menu_cb(GtkWidget *widget, GdkEvent *event)
         /* there's no point in showing menu if we're not connected to any tty */
         return FALSE;
     }
-    
+
     menu = GTK_MENU (widget);
     if (event->type == GDK_BUTTON_PRESS)
     {
@@ -223,9 +223,9 @@ show_menu_cb(GtkWidget *widget, GdkEvent *event)
         if (event_button->button == 3)
         {
             gtk_menu_popup(GTK_MENU(menu), NULL, NULL, NULL, NULL,
-			               event_button->button, event_button->time);
-	        return TRUE;
-	    }
+                           event_button->button, event_button->time);
+            return TRUE;
+        }
     }
     return FALSE;
 }
@@ -292,7 +292,7 @@ static void create_control_line_widget(GtkWidget *box, gchar *lbl,
                          GINT_TO_POINTER(0));
 
         g_signal_connect_swapped(label, "button-press-event",
-	                             G_CALLBACK(show_menu_cb), menu);
+                                 G_CALLBACK(show_menu_cb), menu);
 
         g_free(high);
         g_free(low);
@@ -358,9 +358,9 @@ int main(int argc, char *argv[]) {
     btn_connect = gtk_button_new_with_label("Connect");
 
     gtk_signal_connect(GTK_OBJECT(btn_cfg), "clicked",
-		               GTK_SIGNAL_FUNC(cfg_button_cb), window);
+                       GTK_SIGNAL_FUNC(cfg_button_cb), window);
     gtk_signal_connect(GTK_OBJECT(btn_connect), "clicked",
-		               GTK_SIGNAL_FUNC(connect_button_cb), window);
+                       GTK_SIGNAL_FUNC(connect_button_cb), window);
 
     gtk_box_pack_start(GTK_BOX(hbox_conf), lbl_cfg, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox_conf), btn_cfg, FALSE, FALSE, 0);

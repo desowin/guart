@@ -110,7 +110,7 @@ static void add_to_box(GtkWidget *box, gchar *label, GtkWidget *widget)
 {
     GtkWidget *hbox = gtk_hbox_new(FALSE, 0);
     GtkWidget *lbl = gtk_label_new(label);
-    
+
     gtk_box_pack_start(GTK_BOX(hbox), lbl, TRUE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), widget, TRUE, TRUE, 0);
 
@@ -132,7 +132,7 @@ void terminator_changed_cb(GtkComboBox *widget, Configuration *cfg)
         cfg->terminator = NULL;
         cfg->n_terminator_chars = 0;
     }
-    
+
     switch (n)
     {
         /* see terminator_labels */
@@ -214,7 +214,7 @@ static GtkWidget *create_configuration_table(Configuration *cfg)
     gtk_entry_set_text(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(cbox_port))),
                        cfg->port);
     g_object_set_data(G_OBJECT(cfg_table), "port", cbox_port);
-    
+
     cbox_baudrate = gtk_combo_box_new_text();
     fill_combo_box(cbox_baudrate, baud_labels, G_N_ELEMENTS(baud_labels));
 
@@ -235,7 +235,7 @@ static GtkWidget *create_configuration_table(Configuration *cfg)
 
     cbox_flow = gtk_combo_box_new_text();
     fill_combo_box(cbox_flow, flow_labels, G_N_ELEMENTS(flow_labels));
-    
+
     add_to_table(cfg_table, 0, "Port:", cbox_port);
     add_to_table(cfg_table, 1, "Baudrate:", cbox_baudrate);
     add_to_table(cfg_table, 2, "Format:", vbox_format);
@@ -257,7 +257,7 @@ static GtkWidget *create_configuration_table(Configuration *cfg)
     g_signal_connect(G_OBJECT(cbox_terminator), "changed", G_CALLBACK(terminator_changed_cb), cfg);
 
     gtk_widget_show_all(cfg_table);
-    
+
     return cfg_table;
 }
 
@@ -310,7 +310,7 @@ gboolean configure(GtkWidget *parent, Configuration *cfg)
 
     cfg_new = configuration_new();
     configuration_copy(cfg_new, cfg);
-    
+
     dialog = gtk_dialog_new_with_buttons("GUART configuration",
                                          GTK_WINDOW(parent),
                                          GTK_DIALOG_MODAL,
@@ -331,7 +331,7 @@ gboolean configure(GtkWidget *parent, Configuration *cfg)
     cfg_new->port = gtk_combo_box_get_active_text(GTK_COMBO_BOX(cbox_port));
 
     gtk_widget_destroy(dialog);
-    
+
     switch (result)
     {
         case GTK_RESPONSE_ACCEPT:

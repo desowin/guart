@@ -93,7 +93,7 @@ static tcflag_t get_cflag(Configuration *cfg)
         case GUART_PARITY_EVEN: cflag |= PARENB; break;
         case GUART_PARITY_ODD: cflag |= PARENB | PARODD; break;
     }
-    
+
     cflag |= CREAD; /* Enable receiver */
 
     /* TODO: make this configureable */
@@ -116,7 +116,7 @@ GIOChannel *serial_connect(Configuration *cfg, int *serial_fd)
 
 
     tcgetattr(fd, &config);
-    
+
     if (fd < -1)
     {
         g_message("Unable to connect to %s: %s(%d)!", cfg->port, strerror(errno), errno);
@@ -134,14 +134,14 @@ GIOChannel *serial_connect(Configuration *cfg, int *serial_fd)
     config.c_lflag = 0;
 
     config.c_cc[VTIME] = 0;
- 	config.c_cc[VMIN] = 1;
+    config.c_cc[VMIN] = 1;
 
 
-	if (tcsetattr(fd, TCSANOW, &config) < 0) {
-		g_message("Can't change serial settings: %s(%d)", strerror(errno), errno);
-		close(fd);
-		return NULL;
-	}
+    if (tcsetattr(fd, TCSANOW, &config) < 0) {
+        g_message("Can't change serial settings: %s(%d)", strerror(errno), errno);
+        close(fd);
+        return NULL;
+    }
 
     tcflush(fd, TCOFLUSH);
     tcflush(fd, TCIFLUSH);
@@ -149,13 +149,13 @@ GIOChannel *serial_connect(Configuration *cfg, int *serial_fd)
     io = g_io_channel_unix_new(fd);
     g_io_channel_set_close_on_unref(io, TRUE);
 
- 	if (g_io_channel_set_flags(io, G_IO_FLAG_NONBLOCK, NULL) != G_IO_STATUS_NORMAL) {
-		g_io_channel_unref(io);
-		return NULL;
-	}
+    if (g_io_channel_set_flags(io, G_IO_FLAG_NONBLOCK, NULL) != G_IO_STATUS_NORMAL) {
+        g_io_channel_unref(io);
+        return NULL;
+    }
 
     *serial_fd = fd;
-	return io;
+    return io;
 }
 
 gboolean get_control_lines(int fd, gchar *dtr, gchar *dsr, gchar *rts, gchar *cts)
