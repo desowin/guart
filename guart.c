@@ -25,6 +25,7 @@
 #include "serial.h"
 
 static GtkWidget *window = NULL;
+static GtkWidget *view;
 static GtkWidget *lbl_cfg;
 static GtkWidget *btn_cfg;
 static GtkWidget *btn_connect;
@@ -66,11 +67,16 @@ gboolean serial_read_cb(GIOChannel *source, GIOCondition condition, gpointer dat
     if (condition == G_IO_IN || condition == G_IO_PRI)
     {
         GtkTextIter iter;
+        GtkTextMark *mark;
         gchar c[BUFF_SIZE];
         gint bytes_read = read(serial_fd, c, BUFF_SIZE);
 
         gtk_text_buffer_get_end_iter(databuffer, &iter);
         gtk_text_buffer_insert(databuffer, &iter, c, bytes_read);
+
+        /* scroll to end */
+        mark = gtk_text_buffer_get_insert(databuffer);
+        gtk_text_view_scroll_mark_onscreen(GTK_TEXT_VIEW(view), mark);
 
 #ifdef HAVE_LIBGTKHEX
         hex_document_set_data(hexdocument, hexdocument->file_size,
@@ -201,6 +207,12 @@ static void send_button_cb(GtkButton *btn, GtkWidget *window)
     }
 }
 
+static void
+entry_cb(GtkEntry *entry, GtkWidget *window)
+{
+    send_button_cb(NULL, window);
+}
+
 static gboolean
 show_menu_cb(GtkWidget *widget, GdkEvent *event)
 {
@@ -320,7 +332,6 @@ int main(int argc, char *argv[]) {
     GtkWidget *vbox;
     GtkWidget *hbox_conf;
     GtkWidget *scrolled_window;
-    GtkWidget *view;
 #ifdef HAVE_LIBGTKHEX
     GtkWidget *hexview;
     GtkWidget *notebook;
@@ -372,6 +383,7 @@ int main(int argc, char *argv[]) {
     databuffer = gtk_text_buffer_new(NULL);
     view = gtk_text_view_new_with_buffer(databuffer);
     gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
+    gtk_text_view_set_cursor_visible(GTK_TEXT_VIEW(view), FALSE);
     /* TODO: make this configurable */
     PangoFontDescription *font_desc = pango_font_description_from_string("Monospace 10");
     gtk_widget_modify_font(GTK_WIDGET(view), font_desc);
@@ -392,6 +404,8 @@ int main(int argc, char *argv[]) {
     g_object_set_data(G_OBJECT(window), "entry", entry);
     gtk_signal_connect(GTK_OBJECT(btn_send), "clicked",
                        GTK_SIGNAL_FUNC(send_button_cb), window);
+    g_signal_connect(G_OBJECT(entry), "activate",
+                     G_CALLBACK(entry_cb), window);
 
     control_lines = create_control_line_widgets();
 
