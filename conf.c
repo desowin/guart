@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011 Tomasz Moń <desowin@gmail.com>
+ *  Copyright (c) 2011-2012 Tomasz Moń <desowin@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -95,7 +95,7 @@ static void fill_combo_box(GtkWidget *cbox, gchar** strings, gint n)
     int i;
     for (i=0; i<n; i++)
     {
-        gtk_combo_box_append_text(GTK_COMBO_BOX(cbox), strings[i]);
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(cbox), strings[i]);
     }
 }
 
@@ -108,8 +108,10 @@ static void add_to_table(GtkWidget *table, gint i, gchar *label, GtkWidget *widg
 
 static void add_to_box(GtkWidget *box, gchar *label, GtkWidget *widget)
 {
-    GtkWidget *hbox = gtk_hbox_new(FALSE, 0);
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     GtkWidget *lbl = gtk_label_new(label);
+
+    gtk_box_set_homogeneous(GTK_BOX(hbox), FALSE);
 
     gtk_box_pack_start(GTK_BOX(hbox), lbl, TRUE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), widget, TRUE, TRUE, 0);
@@ -209,31 +211,33 @@ static GtkWidget *create_configuration_table(Configuration *cfg)
 
     cfg_table = gtk_table_new(5, 2, FALSE);
 
-    cbox_port = gtk_combo_box_entry_new_text();
+    cbox_port = gtk_combo_box_text_new_with_entry();
     fill_combo_box(cbox_port, port_labels, G_N_ELEMENTS(port_labels));
     gtk_entry_set_text(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(cbox_port))),
                        cfg->port);
     g_object_set_data(G_OBJECT(cfg_table), "port", cbox_port);
 
-    cbox_baudrate = gtk_combo_box_new_text();
+    cbox_baudrate = gtk_combo_box_text_new();
     fill_combo_box(cbox_baudrate, baud_labels, G_N_ELEMENTS(baud_labels));
 
-    vbox_format = gtk_vbox_new(FALSE, 0);
-    cbox_databits = gtk_combo_box_new_text();
+    vbox_format = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_box_set_homogeneous(GTK_BOX(vbox_format), FALSE);
+
+    cbox_databits = gtk_combo_box_text_new();
     fill_combo_box(cbox_databits, databits_labels, G_N_ELEMENTS(databits_labels));
-    cbox_parity = gtk_combo_box_new_text();
+    cbox_parity = gtk_combo_box_text_new();
     fill_combo_box(cbox_parity, parity_labels, G_N_ELEMENTS(parity_labels));
-    cbox_stopbits = gtk_combo_box_new_text();
+    cbox_stopbits = gtk_combo_box_text_new();
     fill_combo_box(cbox_stopbits, stopbits_labels, G_N_ELEMENTS(stopbits_labels));
     add_to_box(vbox_format, "Data bits:", cbox_databits);
     add_to_box(vbox_format, "Parity:", cbox_parity);
     add_to_box(vbox_format, "Stop bits:", cbox_stopbits);
 
-    cbox_terminator = gtk_combo_box_new_text();
+    cbox_terminator = gtk_combo_box_text_new();
     fill_combo_box(cbox_terminator, terminator_labels, G_N_ELEMENTS(terminator_labels));
     set_terminator_combo_box(cbox_terminator, cfg);
 
-    cbox_flow = gtk_combo_box_new_text();
+    cbox_flow = gtk_combo_box_text_new();
     fill_combo_box(cbox_flow, flow_labels, G_N_ELEMENTS(flow_labels));
 
     add_to_table(cfg_table, 0, "Port:", cbox_port);
@@ -320,15 +324,15 @@ gboolean configure(GtkWidget *parent, Configuration *cfg)
 
     cfg_table = create_configuration_table(cfg_new);
 
-    gtk_box_pack_start_defaults(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))),
-                                cfg_table);
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dialog))),
+                       cfg_table, TRUE, TRUE, 0);
 
     gint result = gtk_dialog_run(GTK_DIALOG(dialog));
 
     cbox_port = GTK_WIDGET(g_object_get_data(G_OBJECT(cfg_table), "port"));
     if (cfg_new->port != NULL)
         g_free(cfg_new->port);
-    cfg_new->port = gtk_combo_box_get_active_text(GTK_COMBO_BOX(cbox_port));
+    cfg_new->port = g_strdup(gtk_entry_get_text(GTK_ENTRY(gtk_bin_get_child(GTK_BIN(cbox_port)))));
 
     gtk_widget_destroy(dialog);
 

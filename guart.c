@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011 Tomasz Moń <desowin@gmail.com>
+ *  Copyright (c) 2011-2012 Tomasz Moń <desowin@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -318,7 +318,8 @@ static void create_control_line_widget(GtkWidget *box, gchar *lbl,
 
 static GtkWidget *create_control_line_widgets()
 {
-    GtkWidget *hbox = gtk_hbox_new(TRUE, 0);
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_set_homogeneous(GTK_BOX(hbox), TRUE);
 
     create_control_line_widget(hbox, "DTR:", &txt_dtr, "DTR", set_dtr);
     create_control_line_widget(hbox, "DSR:", &txt_dsr, NULL, NULL);
@@ -352,14 +353,16 @@ int main(int argc, char *argv[]) {
 
     window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_size_request(window, 650, 500);
-    gtk_signal_connect(GTK_OBJECT(window), "destroy",
-                       GTK_SIGNAL_FUNC (destroy), NULL);
+    g_signal_connect(G_OBJECT(window), "destroy",
+                     G_CALLBACK(destroy), NULL);
 
     g_object_set_data_full(G_OBJECT(window), "cfg", cfg, (GDestroyNotify)configuration_free);
 
-    vbox = gtk_vbox_new(FALSE, 5);
+    vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_box_set_homogeneous(GTK_BOX(vbox), FALSE);
 
-    hbox_conf = gtk_hbox_new(FALSE, 5);
+    hbox_conf = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_box_set_homogeneous(GTK_BOX(hbox_conf), FALSE);
 
     cfg_text = get_configuration_string(cfg);
     lbl_cfg = gtk_label_new(cfg_text);
@@ -368,10 +371,10 @@ int main(int argc, char *argv[]) {
     btn_cfg = gtk_button_new_with_label("Configure");
     btn_connect = gtk_button_new_with_label("Connect");
 
-    gtk_signal_connect(GTK_OBJECT(btn_cfg), "clicked",
-                       GTK_SIGNAL_FUNC(cfg_button_cb), window);
-    gtk_signal_connect(GTK_OBJECT(btn_connect), "clicked",
-                       GTK_SIGNAL_FUNC(connect_button_cb), window);
+    g_signal_connect(G_OBJECT(btn_cfg), "clicked",
+                     G_CALLBACK(cfg_button_cb), window);
+    g_signal_connect(G_OBJECT(btn_connect), "clicked",
+                     G_CALLBACK(connect_button_cb), window);
 
     gtk_box_pack_start(GTK_BOX(hbox_conf), lbl_cfg, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox_conf), btn_cfg, FALSE, FALSE, 0);
@@ -395,15 +398,17 @@ int main(int argc, char *argv[]) {
     hexview = hex_document_add_view(hexdocument);
 #endif
 
-    hbox_input = gtk_hbox_new(FALSE, 0);
+    hbox_input = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    gtk_box_set_homogeneous(GTK_BOX(hbox_input), FALSE);
+
     entry = gtk_entry_new();
     btn_send = gtk_button_new_with_label("Send");
     gtk_box_pack_start(GTK_BOX(hbox_input), entry, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(hbox_input), btn_send, FALSE, FALSE, 0);
 
     g_object_set_data(G_OBJECT(window), "entry", entry);
-    gtk_signal_connect(GTK_OBJECT(btn_send), "clicked",
-                       GTK_SIGNAL_FUNC(send_button_cb), window);
+    g_signal_connect(G_OBJECT(btn_send), "clicked",
+                     G_CALLBACK(send_button_cb), window);
     g_signal_connect(G_OBJECT(entry), "activate",
                      G_CALLBACK(entry_cb), window);
 

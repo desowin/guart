@@ -1,9 +1,9 @@
 CC = gcc
 EXTRA_CFLAGS ?=
 EXTRA_LDFLAGS ?=
-CFLAGS := $(shell pkg-config --cflags glib-2.0 gio-2.0 gtk+-2.0 gtkhex) -Wall -g -ansi -std=c99 $(EXTRA_CFLAGS)
+CFLAGS := $(shell pkg-config --cflags glib-2.0 gio-2.0 gtk+-3.0 gtkhex-3) -Wall -g -ansi -std=c99 $(EXTRA_CFLAGS)
 LDFLAGS = $(EXTRA_LDFLAGS) -Wl,--as-needed
-LDADD := $(shell pkg-config --libs glib-2.0 gio-2.0 gtk+-2.0 gthread-2.0 gtkhex) 
+LDADD := $(shell pkg-config --libs glib-2.0 gio-2.0 gtk+-3.0 gthread-2.0 gtkhex-3)
 OBJECTS = guart.o conf.o serial.o
 DEPFILES = $(foreach m,$(OBJECTS:.o=),.$(m).m)
 
@@ -16,11 +16,11 @@ DEPFILES = $(foreach m,$(OBJECTS:.o=),.$(m).m)
 
 all: guart
 
-guart: $(OBJECTS) 
+guart: $(OBJECTS)
 	$(CC) $(LDFLAGS) -o $@ $+ $(LDADD)
 
 clean:
-	rm -f *.o
+	rm -f *.o *.*.m
 
 distclean : clean
 	rm -f .*.m

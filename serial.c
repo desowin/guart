@@ -28,8 +28,10 @@
 #include "serial.h"
 #include "conf.h"
 
+#if 0
 /* FIXME: do runtime check if currently running kernel supports CDTRDSR */
 #define CDTRDSR 004000000000 /* DTR/DSR flow control */
+#endif
 
 static tcflag_t get_cflag(Configuration *cfg)
 {
