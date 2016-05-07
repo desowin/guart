@@ -1,4 +1,4 @@
-CC = gcc
+CC ?= gcc
 EXTRA_CFLAGS ?=
 EXTRA_LDFLAGS ?=
 CFLAGS := $(shell pkg-config --cflags glib-2.0 gio-2.0 gtk+-3.0 gtkhex-3) -Wall -g -ansi -std=c99 $(EXTRA_CFLAGS)

@@ -1,0 +1,10 @@
+language: c
+compiler:
+  - clang
+  - gcc
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install libglib2.0-dev libgtk-3-dev libgtkhex-3-dev
+
+script: make
